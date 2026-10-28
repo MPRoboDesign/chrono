@@ -22,6 +22,7 @@
 #include "chrono/utils/ChUtils.h"
 
 #include "chrono_vehicle/driver/ChInteractiveDriver.h"
+#include "chrono_vehicle/ChVehicleVisualSystem.h"
 
 #ifdef CHRONO_VSG
     #include "chrono_vehicle/wheeled_vehicle/ChWheeledVehicleVisualSystemVSG.h"

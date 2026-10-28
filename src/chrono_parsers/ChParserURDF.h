@@ -135,6 +135,10 @@ class ChApiParsers ChParserURDF {
     /// This function must be called after PopulateSystem.
     std::shared_ptr<ChBody> GetChBody(const std::string& name) const;
 
+    /// Get all bodies created from the URDF model.
+    /// This function must be called after PopulateSystem.
+    const std::vector<std::shared_ptr<ChBodyAuxRef>>& GetBodies() const { return m_bodies; }
+
     /// Get the joint with specified name in the Chrono model.
     /// This function must be called after PopulateSystem.
     std::shared_ptr<ChLinkBase> GetChLink(const std::string& name) const;

@@ -20,6 +20,8 @@
 
 #include "chrono/utils/ChProfiler.h"
 #include "chrono/utils/ChUtils.h"
+#include "chrono/utils/ChMeshLoaderAssimp.h"
+#include "chrono_thirdparty/filesystem/path.h"
 
 #include "chrono/assets/ChVisualShapeTriangleMesh.h"
 #include "chrono/assets/ChVisualShapeSurface.h"
@@ -819,7 +821,18 @@ void ChVisualSystemIrrlicht::PopulateIrrNode(ISceneNode* node,
             continue;
 
         if (auto obj = std::dynamic_pointer_cast<ChVisualShapeModelFile>(shape)) {
-            auto trimesh = ChTriangleMeshConnected::CreateFromWavefrontFile(obj->GetFilename(), true, true);
+            // .obj uses Chrono's own native Wavefront loader unchanged; any other
+            // format (.dae, .stl, etc. - as commonly produced by URDF exporters)
+            // goes through Assimp instead, which CreateFromWavefrontFile cannot
+            // parse (it would silently return a zero-vertex mesh, rendering
+            // nothing for that shape). See utils/ChMeshLoaderAssimp.h.
+            std::string ext = filesystem::path(obj->GetFilename()).extension();
+            std::shared_ptr<ChTriangleMeshConnected> trimesh;
+            if (ext == "obj" || ext == "OBJ") {
+                trimesh = ChTriangleMeshConnected::CreateFromWavefrontFile(obj->GetFilename(), true, true);
+            } else {
+                trimesh = chrono::utils::LoadMeshWithAssimp(obj->GetFilename());
+            }
             auto trimesh_shape = chrono_types::make_shared<ChVisualShapeTriangleMesh>();
             trimesh_shape->SetMesh(trimesh);
 

@@ -1097,6 +1097,7 @@ set(Chrono_utils_SOURCES
     utils/ChConvexHull.cpp
     utils/ChBodyGeometry.cpp
     utils/ChForceFunctors.cpp
+    utils/ChMeshLoaderAssimp.cpp
     )
 set(Chrono_utils_HEADERS
     utils/ChConstants.h
@@ -1114,6 +1115,7 @@ set(Chrono_utils_HEADERS
     utils/ChConvexHull.h
     utils/ChBodyGeometry.h
     utils/ChForceFunctors.h
+    utils/ChMeshLoaderAssimp.h
 )
 if(NOT EMSCRIPTEN)
     set(Chrono_utils_SOURCES ${Chrono_utils_SOURCES}
@@ -1424,6 +1426,12 @@ target_include_directories(Chrono_core PUBLIC
 )
 
 target_link_libraries(Chrono_core PUBLIC Eigen3::Eigen)
+
+# Assimp: used by utils/ChMeshLoaderAssimp (branch-local addition) to load
+# non-.obj/.stl mesh files (e.g. URDF-style .dae) for ChVisualShapeModelFile,
+# shared by both Chrono::Sensor's OptiX engine and Chrono::Irrlicht.
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(Chrono_core PRIVATE assimp::assimp)
 
 if(CHRONO_THRUST_FOUND)
   target_link_libraries(Chrono_core PRIVATE Thrust::Thrust)

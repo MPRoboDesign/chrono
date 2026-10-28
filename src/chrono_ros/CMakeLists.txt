@@ -36,6 +36,8 @@ find_package(std_msgs QUIET)
 find_package(geometry_msgs QUIET)
 find_package(sensor_msgs QUIET)
 find_package(tf2_msgs QUIET)
+find_package(nav_msgs QUIET)
+find_package(trajectory_msgs QUIET)
 
 if(rclcpp_FOUND AND tf2_ros_FOUND AND rcl_interfaces_FOUND AND std_msgs_FOUND AND geometry_msgs_FOUND AND sensor_msgs_FOUND AND tf2_msgs_FOUND)
   message(STATUS "Found ROS 2")
@@ -69,6 +71,8 @@ set(ROS2_TARGETS
     ${geometry_msgs_TARGETS}
     ${sensor_msgs_TARGETS}
     ${tf2_msgs_TARGETS}
+    ${nav_msgs_TARGETS}
+    ${trajectory_msgs_TARGETS}
 )
 
 # Optional package
@@ -212,6 +216,21 @@ if (CH_ROS_HAS_INTERFACES)
 endif()
 source_group("robot_handler" FILES ${CH_ROS_ROBOT_HANDLER_FILES})
 
+set(CH_ROS_QUARDET_HANDLER_FILES
+  handlers/quardet/ChROSQuardetIPC.h
+  handlers/quardet/ChROSQuardetStateHandlers.h
+  handlers/quardet/ChROSQuardetStateHandlers.cpp
+  handlers/quardet/ChROSQuardetSubHandlers.h
+  handlers/quardet/ChROSQuardetSubHandlers.cpp
+)
+if (CH_ENABLE_MODULE_SENSOR)
+  list(APPEND CH_ROS_QUARDET_HANDLER_FILES
+    handlers/quardet/ChROSQuardetSensorHandlers.h
+    handlers/quardet/ChROSQuardetSensorHandlers.cpp
+  )
+endif()
+source_group("quardet_handler" FILES ${CH_ROS_QUARDET_HANDLER_FILES})
+
 # ------------------------------------------------------------------------------
 # Set dependencies on other Chrono modules
 # ------------------------------------------------------------------------------
@@ -241,6 +260,7 @@ add_library(Chrono_ros SHARED
             ${CH_ROS_SENSOR_HANDLER_FILES}
             ${CH_ROS_MBS_HANDLER_FILES}
             ${CH_ROS_ROBOT_HANDLER_FILES}
+            ${CH_ROS_QUARDET_HANDLER_FILES}
 )
 add_library(Chrono::ros ALIAS Chrono_ros)
 
@@ -350,7 +370,15 @@ target_sources(chrono_ros_node PRIVATE
     handlers/robot/ChROSRobotModelHandler_ros.cpp
     handlers/mbs/ChROSCraneStateHandler_ros.cpp
     handlers/mbs/ChROSActuatorStateHandler_ros.cpp
+
+    handlers/quardet/ChROSQuardetStateHandlers_ros.cpp
+    handlers/quardet/ChROSQuardetSubHandlers_ros.cpp
 )
+if (CH_ENABLE_MODULE_SENSOR)
+  target_sources(chrono_ros_node PRIVATE
+      handlers/quardet/ChROSQuardetSensorHandlers_ros.cpp
+  )
+endif()
 
 target_include_directories(chrono_ros_node PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/..

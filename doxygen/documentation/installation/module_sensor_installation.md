@@ -61,6 +61,25 @@ Even if OptiX is available, users can disable the ray-tracing-based sensor (by s
   chrono::sensor::SetSensorShaderDir("path/to/install/lib/sensor_ptx/");
  ```
 
+<div class="ce-info">
+
+**Branch-local fix (not upstream Chrono):** `ChOptixEngine`'s handling of
+`ChVisualShapeModelFile` (a mesh referenced by filename, as produced by
+`ChParserURDF` for any URDF `<mesh>` visual) previously always parsed the
+file as Wavefront `.obj` via `ChTriangleMeshConnected::CreateFromWavefrontFile()`,
+regardless of the file's actual extension. Fed a non-`.obj` file (e.g. `.dae`,
+`.stl` - the formats most URDF exporters actually produce), this doesn't
+error - it silently returns a mesh with zero vertices, which OptiX then
+rejects at acceleration-structure build time with `OPTIX_ERROR_INVALID_VALUE`.
+On this branch, non-`.obj` files are now loaded via Assimp instead, with
+correct node-hierarchy transform handling (see
+`src/chrono/utils/ChMeshLoaderAssimp.h` for the full technical writeup and
+`docs/chrono_installation.md` in the quardet repo for the installation
+context this fix is part of). The same fix applies to Chrono::Irrlicht - see
+the note in `module_irrlicht_installation.md`.
+
+</div>
+
 ## How to use it
 
 - Consult the [reference manual](@ref manual_sensor).

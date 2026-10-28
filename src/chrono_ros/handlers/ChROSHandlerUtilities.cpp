@@ -34,9 +34,14 @@ double ChROSHandlerUtilities::GetChronoTime(const builtin_interfaces::msg::Time&
 
 bool ChROSHandlerUtilities::CheckROSTopicName(std::shared_ptr<ChROSInterface> interface,
                                               const std::string& topic_name) {
+    auto node = interface->GetNode();
+    if (!node) {
+        return true;  // IPC mode - no node in main process, nothing to validate against
+    }
+
     try {
-        std::string full_topic_name = rclcpp::expand_topic_or_service_name(topic_name, interface->GetNode()->get_name(),
-                                                                           interface->GetNode()->get_namespace());
+        std::string full_topic_name =
+            rclcpp::expand_topic_or_service_name(topic_name, node->get_name(), node->get_namespace());
     } catch (rclcpp::exceptions::InvalidTopicNameError& e) {
         std::cerr << "ERROR: Topic '" << topic_name << "' is not a valid ROS topic name: " << e.what() << std::endl;
         return false;

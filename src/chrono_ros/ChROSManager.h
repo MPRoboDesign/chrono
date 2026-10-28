@@ -41,8 +41,12 @@ namespace ipc {
 /// @{
 
 /// Manages the ROS handlers and their registration/updates.
-/// Uses IPC mode: handlers are not initialized in the main process.
-/// Instead, their data is extracted and sent to a subprocess via IPC.
+/// Uses IPC mode: each handler's Initialize() is called (so a handler can
+/// capture the interface for a direct Publish() call if it uses that
+/// pattern), but GetNode() returns nullptr - there is no live rclcpp::Node
+/// in the main process. Handler data is extracted (via GetSerializedData()
+/// or a direct Publish() call) and sent to a subprocess via IPC, which does
+/// the actual ROS publishing.
 class CH_ROS_API ChROSManager {
   public:
     /// Constructor for the ChROSManager creates a single ChROSInterface. To use multiple ChROSInterfaces, multiple

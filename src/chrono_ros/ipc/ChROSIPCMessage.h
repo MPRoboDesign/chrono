@@ -47,6 +47,22 @@ enum class MessageType : uint32_t {
     CUSTOM_DATA = 16,
     CRANE_STATE_DATA = 17,      ///< Crane mechanism displacement publisher
     ACTUATOR_STATE_DATA = 18,   ///< Hydraulic actuator state publisher
+
+    // quardet project handlers (chrono_ws) - topic-multiplexed where the same
+    // ROS message shape is reused across multiple handler instances.
+    QRD_WRENCH_DATA = 19,           ///< geometry_msgs/WrenchStamped (per-foot)
+    QRD_JOINT_STATE_DATA = 20,      ///< sensor_msgs/JointState publisher
+    QRD_ODOM_DATA = 21,             ///< nav_msgs/Odometry
+    QRD_TF_DATA = 22,               ///< tf2_msgs/TFMessage (variable transform count)
+    QRD_TWIST_DATA = 23,            ///< geometry_msgs/Twist (cmd_vel, robot_pose)
+    QRD_IMAGE_DATA = 24,            ///< sensor_msgs/Image (RGBA8 camera)
+    QRD_CAMERA_INFO_DATA = 25,      ///< sensor_msgs/CameraInfo
+    QRD_POINTCLOUD_DATA = 26,       ///< sensor_msgs/PointCloud2 (depth camera)
+    QRD_JOINT_STATE_SUB = 27,       ///< sensor_msgs/JointState subscriber
+    QRD_JOINT_TRAJECTORY_SUB = 28,  ///< trajectory_msgs/JointTrajectory subscriber
+    QRD_CLOCK_SUB = 29,             ///< rosgraph_msgs/Clock subscriber
+    QRD_TELEPORT_POSE_SUB = 30,     ///< geometry_msgs/PoseStamped subscriber (teleport robot root)
+
     SHUTDOWN = 99
 };
 

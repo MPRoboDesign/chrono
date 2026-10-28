@@ -80,6 +80,8 @@ public:
 };
 ```
 
+> **Note**: `ChROSManager::Initialize()` calls `Initialize()` on every registered handler (once, right after the IPC subprocess launches). `interface->GetNode()` returns `nullptr` there - there is no live `rclcpp::Node` in the main process in IPC mode - so `Initialize()` must not dereference it. `ChROSHandlerUtilities::CheckROSTopicName()` already handles this (returns `true` early if the node is null); write any custom validation in `Initialize()` the same way. This mainly matters if your handler captures the interface for a direct `Publish()` call instead of relying on `GetSerializedData()` polling (see Best Practices below) - `GetSerializedData()`-only handlers typically don't need anything from `Initialize()` beyond input validation.
+
 **Implementation (`ChROSMyHandler.cpp`):**
 ```cpp
 #include "ChROSMyHandler_ipc.h" // Include the shared struct
@@ -298,6 +300,7 @@ ros_manager->RegisterHandler(my_handler);
 
 ## Best Practices
 
+*   **Direct `Publish()` instead of `GetSerializedData()` polling**: some handlers (e.g. `chrono_ros/handlers/quardet/`) call `m_ipc_interface->SendHandlerData(...)` directly from their own `Publish()` method - explicitly invoked by application code - instead of implementing `GetSerializedData()` for the Manager to poll every `Update()`. Both are valid; either way, `Initialize()` still runs first and is where you'd capture the interface (see the note above).
 *   **Throttling**: Implement rate limiting in `GetSerializedData` using `m_update_rate`. Return an empty vector if it's not time to publish. This ease the stress on ROS(its DDS middleware) since simulation can run many times faster than realtime in some cases.
 *   **Memory**: Avoid reallocating vectors in the loop. Use a member variable `std::vector<uint8_t> m_buffer` and `resize()` it.
 *   **Thread Safety**: In bidirectional handlers, `HandleIncomingMessage` is called from the main thread, but ensure your Chrono object modifications are safe if you are using multi-threaded stepping.

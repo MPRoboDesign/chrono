@@ -40,6 +40,17 @@ void ChROSManager::Initialize() {
     m_interface->Initialize();
 
     std::cout << "ChROSManager: IPC interface initialized" << std::endl;
+
+    // Let each handler capture the interface (e.g. for a direct Publish()
+    // call, as an alternative to the generic GetSerializedData() polling
+    // done in Update() below). GetNode() returns nullptr in IPC mode, so a
+    // handler's Initialize() must not depend on a live rclcpp::Node here -
+    // see ChROSClockHandler::Initialize() for the expected pattern.
+    for (auto handler : m_handlers) {
+        if (!handler->Initialize(m_interface)) {
+            std::cerr << "ChROSManager: handler failed to initialize" << std::endl;
+        }
+    }
 }
 
 bool ChROSManager::Update(double time, double step) {

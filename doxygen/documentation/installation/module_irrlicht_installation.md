@@ -49,6 +49,25 @@ Instructions on how to install the Chrono::Irrlicht library are already reported
    	 
 4. Press 'Configure' again, then 'Generate', and proceed as usual in the installation instructions.
 
+<div class="ce-info">
+
+**Branch-local fix (not upstream Chrono):** `ChVisualSystemIrrlicht`'s handling
+of `ChVisualShapeModelFile` (a mesh referenced by filename, as produced by
+`ChParserURDF` for any URDF `<mesh>` visual) previously always parsed the
+file as Wavefront `.obj` via `ChTriangleMeshConnected::CreateFromWavefrontFile()`,
+regardless of the file's actual extension. Fed a non-`.obj` file (e.g. `.dae`,
+`.stl` - the formats most URDF exporters actually produce), this doesn't
+error - it silently returns a mesh with zero vertices, so that body simply
+renders as empty/invisible in the interactive view (no crash, no warning).
+Confirmed this affects even Chrono's own bundled `demo_PARSER_URDF` when
+Robosimian (all-`.stl`) is selected. On this branch, non-`.obj` files are now
+loaded via Assimp instead, with correct node-hierarchy transform handling
+(see `src/chrono/utils/ChMeshLoaderAssimp.h` for the full technical writeup,
+shared with the identical fix in Chrono::Sensor's OptiX engine - see
+`module_sensor_installation.md`). `docs/chrono_installation.md` in the
+quardet repo has the installation context this fix is part of.
+
+</div>
 
 ## How to use it
 

@@ -48,6 +48,9 @@
 #include "chrono_sensor/optix/ChNVDBVolume.h"
 #include <random>
 
+#include "chrono/utils/ChMeshLoaderAssimp.h"
+#include "chrono_thirdparty/filesystem/path.h"
+
 #include "chrono_sensor/cuda/cuda_utils.cuh"
 
 #ifdef USE_SENSOR_NVDB
@@ -593,7 +596,13 @@ void ChOptixEngine::ConstructScene() {
                         deformableMeshVisualization(body, trimesh_shape, shape_frame);
                     }
                 } else if (auto obj = std::dynamic_pointer_cast<ChVisualShapeModelFile>(shape)) {
-                    auto obj_trimesh = ChTriangleMeshConnected::CreateFromWavefrontFile(obj->GetFilename(), true, true);
+                    std::string ext = filesystem::path(obj->GetFilename()).extension();
+                    std::shared_ptr<ChTriangleMeshConnected> obj_trimesh;
+                    if (ext == "obj" || ext == "OBJ") {
+                        obj_trimesh = ChTriangleMeshConnected::CreateFromWavefrontFile(obj->GetFilename(), true, true);
+                    } else {
+                        obj_trimesh = chrono::utils::LoadMeshWithAssimp(obj->GetFilename());
+                    }
                     auto obj_trimesh_shape = chrono_types::make_shared<ChVisualShapeTriangleMesh>();
                     obj_trimesh_shape->SetMesh(obj_trimesh);
                     rigidMeshVisualization(body, obj_trimesh_shape, shape_frame);
