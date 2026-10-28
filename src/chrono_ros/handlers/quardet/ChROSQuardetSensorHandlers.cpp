@@ -10,6 +10,7 @@
 #include "chrono_sensor/filters/ChFilterAccess.h"
 #include "chrono/utils/ChConstants.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 
@@ -21,6 +22,27 @@ namespace ros {
 static void CopyTruncated(char* dst, size_t dst_size, const std::string& src) {
     std::strncpy(dst, src.c_str(), dst_size - 1);
     dst[dst_size - 1] = '\0';
+}
+
+// Stamp for a camera buffer: the middle of its exposure. A buffer's TimeStamp is
+// the sim time its collection window closed (ChSensorBuffer.h), the scene is
+// rendered over that whole window, and the data only becomes available `lag`
+// seconds later - so stamping with the main loop's current time (the handler's
+// sec/nsec) put every image/cloud 60-100 ms after the moment it shows, and any
+// consumer projecting it with TF at that stamp (elevation_mapping, sel_map) used
+// the wrong pose. Falls back to sec/nsec until the first buffer has a time.
+static void BufferStamp(float buffer_time, float collection_window, int fallback_sec, int fallback_nsec,
+                        int32_t& out_sec, uint32_t& out_nsec) {
+    if (buffer_time <= 0.f) {
+        out_sec = static_cast<int32_t>(fallback_sec);
+        out_nsec = static_cast<uint32_t>(fallback_nsec);
+        return;
+    }
+    double t = std::max(0.0, static_cast<double>(buffer_time) - 0.5 * collection_window);
+    double whole = std::floor(t);
+    auto nanos = static_cast<uint64_t>(std::llround((t - whole) * 1e9));
+    out_sec = static_cast<int32_t>(whole) + static_cast<int32_t>(nanos / 1000000000ULL);
+    out_nsec = static_cast<uint32_t>(nanos % 1000000000ULL);
 }
 
 // -----------------------------------------------------------------------------
@@ -50,8 +72,7 @@ void ChROSQuardetImageHandler::Publish() {
     auto* header = reinterpret_cast<ipc::QrdImageHeader*>(buffer.data());
     CopyTruncated(header->topic_name, sizeof(header->topic_name), topic);
     CopyTruncated(header->frame_id, sizeof(header->frame_id), "camera_link");
-    header->sec = sec;
-    header->nsec = static_cast<uint32_t>(nsec);
+    BufferStamp(rgba_ptr->TimeStamp, cam->GetCollectionWindow(), sec, nsec, header->sec, header->nsec);
     header->width = cam_width;
     header->height = cam_height;
     header->step = step;
@@ -98,10 +119,8 @@ void ChROSQuardetCameraInfoHandler::Publish() {
     ipc::QrdCameraInfoData data{};
     CopyTruncated(data.topic_name, sizeof(data.topic_name), topic);
     CopyTruncated(data.frame_id, sizeof(data.frame_id), "camera_link");
-    data.sec = sec;
-    data.nsec = static_cast<uint32_t>(nsec);
-
     auto rgba_ptr = cam->GetMostRecentBuffer<UserRGBA8BufferPtr>();
+    BufferStamp(rgba_ptr->TimeStamp, cam->GetCollectionWindow(), sec, nsec, data.sec, data.nsec);
     data.height = rgba_ptr->Height;
     data.width = rgba_ptr->Width;
 
@@ -192,8 +211,7 @@ void ChROSQuardetPointCloudHandler::Publish() {
     auto* header = reinterpret_cast<ipc::QrdPointCloudHeader*>(buffer.data());
     CopyTruncated(header->topic_name, sizeof(header->topic_name), topic);
     CopyTruncated(header->frame_id, sizeof(header->frame_id), "camera_link");
-    header->sec = sec;
-    header->nsec = static_cast<uint32_t>(nsec);
+    BufferStamp(depth_ptr->TimeStamp, depth_cam->GetCollectionWindow(), sec, nsec, header->sec, header->nsec);
     header->num_points = num_points;
 
     std::memcpy(buffer.data() + sizeof(ipc::QrdPointCloudHeader), points.data(), points_bytes);
